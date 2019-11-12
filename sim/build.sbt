@@ -54,8 +54,9 @@ lazy val firesimRef = ProjectRef(file("."), "firesim")
 lazy val midas = (project in file("midas"))
   .dependsOn(barstools, rocketchip)
   .settings(commonSettings,
-    Runtime / fullClasspathAsJars ++= ((firesimRef / Runtime / fullClasspath).value ++
-                                       (firechip / Runtime / fullClasspath).value)
+    //Runtime / fullClasspathAsJars ++= ((firesimRef / Runtime / fullClasspath).value ++
+    //                                   (firechip / Runtime / fullClasspath).value)
+    Runtime / fullClasspathAsJars ++= (firesimRef / Runtime / fullClasspath).value 
   )
 
 lazy val firesimLib = (project in file("firesim-lib"))

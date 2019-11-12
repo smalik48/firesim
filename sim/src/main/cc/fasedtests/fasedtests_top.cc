@@ -32,7 +32,7 @@ fasedtests_top_t::fasedtests_top_t(int argc, char** argv)
 
 
 std::vector<uint64_t> host_mem_offsets;
-uint64_t host_mem_offset = -0x80000000LL;
+uint64_t host_mem_offset = 0;
 #ifdef FASEDMEMORYTIMINGMODEL_0_PRESENT
     // Casts are required for now since the emitted type can change...
     AddressMap fased_addr_map = AddressMap(FASEDMEMORYTIMINGMODEL_0_R_num_registers,

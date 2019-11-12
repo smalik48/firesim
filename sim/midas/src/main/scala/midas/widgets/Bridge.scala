@@ -25,8 +25,13 @@ import scala.reflect.runtime.{universe => ru}
 
 abstract class TokenizedRecord extends Record with HasChannels
 
-abstract class BridgeModule[HostPortType <: TokenizedRecord]
-  (implicit p: Parameters) extends Widget()(p) {
+abstract class BridgeModule[HostPortType <: TokenizedRecord](implicit p: Parameters) extends Widget()(p) {
+  def module: BridgeModuleImp[HostPortType]
+}
+
+abstract class BridgeModuleImp[HostPortType <: TokenizedRecord]
+    (wrapper: BridgeModule[_ <: HostPortType])
+    (implicit p: Parameters) extends WidgetImp(wrapper)(p) {
   def hPort: HostPortType
 }
 
@@ -101,7 +106,7 @@ trait HasChannels {
   private[midas] def allChannelNames(): Seq[String] = inputChannelNames ++ outputChannelNames ++
     outputRVChannelNames ++ inputRVChannelNames
 
-  // FCCA renamer can't handle flattening of an aggregate target; so do it manually
+  // !FIXME! FCCA renamer can't handle flattening of an aggregate target; so do it manually
   protected def lowerAggregateIntoLeafTargets(bits: Data): Seq[ReferenceTarget] = {
     val (ins, outs, _, _) = SimUtils.parsePorts(bits)
     require (ins.isEmpty || outs.isEmpty, "Aggregate should be uni-directional")

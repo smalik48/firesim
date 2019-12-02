@@ -44,15 +44,17 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val headerConsts = new mutable.ArrayBuffer[(String, Long)]
   val SimWrapperConfig(chAnnos, bridgeAnnos, leafTypeMap) = p(SimWrapperKey)
   val master = addWidget(new SimulationMaster)
-  val loadMem = addWidget(new LoadMemWidget)
   val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: TokenizedRecord]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
   val bridgesRequiringDRAM = bridgeModuleMap.values.collect({ case b: RequiresHostDRAM =>  b}).toSeq.sortBy(_.bytesOfDRAMRequired)
-  val dramOffsets = bridgesRequiringDRAM.foldLeft(Seq(BigInt(0)))({
+  val dramOffsetsRev = bridgesRequiringDRAM.foldLeft(Seq(BigInt(0)))({
     case (offsets, bridge) =>
       require(isPow2(bridge.bytesOfDRAMRequired))
       (offsets.head + bridge.bytesOfDRAMRequired) +: offsets
-    }).tail.reverse
+    })
+  val totalDRAMAllocated = dramOffsetsRev.head
+  val dramOffsets = dramOffsetsRev.tail.reverse
 
+  val loadMem = addWidget(new LoadMemWidget(totalDRAMAllocated))
   // Host DRAM handling
   val memChannelParams = p(HostMemChannelKey)
   val memAXI4Node = AXI4SlaveNode(Seq.tabulate(p(HostMemNumChannels)) { channel =>

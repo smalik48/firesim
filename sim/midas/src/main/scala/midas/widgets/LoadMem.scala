@@ -82,7 +82,7 @@ class LoadMemWriter(maxBurst: Int)(implicit p: Parameters) extends NastiModule {
   }
 }
 
-class LoadMemWidget(implicit p: Parameters) extends Widget()(p) {
+class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) extends Widget()(p) {
   val toHostMemory = AXI4MasterNode(
     Seq(AXI4MasterPortParameters(
       masters = Seq(AXI4MasterParameters(
@@ -148,7 +148,7 @@ class LoadMemWidgetImp(wrapper: LoadMemWidget)(implicit p: Parameters) extends W
   reqArb.io.in(1).valid := zeroOutDram.valid
   reqArb.io.in(1).bits.zero := true.B
   reqArb.io.in(1).bits.addr := extMem.base.U
-  reqArb.io.in(1).bits.len  := (extMem.size >> log2Ceil(hWidth/8)).U
+  reqArb.io.in(1).bits.len  := (wrapper.totalDRAMAllocated >> log2Ceil(hWidth/8)).U
   zeroOutDram.ready := reqArb.io.in(1).ready
 
   val writer = Module(new LoadMemWriter(maxBurst)(hParams))

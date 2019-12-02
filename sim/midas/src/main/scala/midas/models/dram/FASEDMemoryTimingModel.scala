@@ -5,7 +5,7 @@ package models
 // From RC
 import freechips.rocketchip.config.{Parameters, Field}
 import freechips.rocketchip.util.{DecoupledHelper}
-import freechips.rocketchip.diplomacy.{IdRange, LazyModule}
+import freechips.rocketchip.diplomacy.{IdRange, LazyModule, AddressSet}
 import freechips.rocketchip.amba.axi4._
 import junctions._
 
@@ -34,6 +34,11 @@ case class BaseParams(
   maxWrites: Int,
   nastiKey: Option[NastiParameters] = None,
   edge: Option[AXI4EdgeParameters] = None,
+
+  // If not providing an AXI4 edge, use these to constrain the amount of FPGA DRAM
+  // used by the memory model
+  targetAddressOffset: Option[BigInt]    = None,
+  targetAddressSpaceSize: Option[BigInt] = None,
 
   // AREA OPTIMIZATIONS:
   // AXI4 bursts(INCR) can be 256 beats in length -- some
@@ -73,7 +78,15 @@ case class AXI4EdgeSummary(
   maxWriteTransfer: Int,
   idReuse: Option[Int],
   maxFlight: Option[Int],
-)
+  address: Seq[AddressSet]
+) {
+  def targetAddressOffset(): BigInt = address.map(_.base).reduce((a,b) => if (a < b) a else b)
+  def targetAddressSpaceSize(): BigInt = {
+    address.map(set => require(set.contiguous)) //Remove once we handle striping
+    val base = targetAddressOffset()
+    address.map(set => set.base + set.mask + 1).reduce((a,b) => if (a < b) a else b)
+  }
+}
 
 object AXI4EdgeSummary {
   // Returns max ID reuse; None -> unbounded
@@ -102,11 +115,15 @@ object AXI4EdgeSummary {
     })
   }
 
-  def apply(e: AXI4EdgeParameters): AXI4EdgeSummary = AXI4EdgeSummary(
+  def apply(e: AXI4EdgeParameters, idx: Int = 0): AXI4EdgeSummary = {
+    val slave = e.slave.slaves(idx)
+    AXI4EdgeSummary(
     getMaxTransferFromEdge(e)._1,
     getMaxTransferFromEdge(e)._2,
     getIDReuseFromEdge(e),
-    getMaxTotalFlightFromEdge(e))
+    getMaxTotalFlightFromEdge(e),
+    slave.address)
+  }
 }
 
 abstract class BaseConfig {
@@ -146,6 +163,16 @@ abstract class BaseConfig {
 
   def maxWritesBits(implicit p: Parameters) = log2Up(maxWrites)
   def maxReadsBits(implicit p: Parameters) = log2Up(maxReads)
+
+  def targetAddressOffset(implicit p: Parameters): BigInt =
+    p(FasedAXI4Edge).map(_.targetAddressOffset)
+                    .orElse(params.targetAddressOffset)
+                    .getOrElse(0)
+
+  def targetAddressSpaceSize(implicit p: Parameters): BigInt =
+    p(FasedAXI4Edge).map(_.targetAddressSpaceSize)
+                    .orElse(params.targetAddressSpaceSize)
+                    .getOrElse(BigInt(1) << p(NastiKey).addrBits)
 }
 
 
@@ -195,7 +222,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
         id   = IdRange(0, 1 << p(NastiKey).idBits))))))
 
 
-  val bytesOfDRAMRequired = BigInt(1) << completeConfig.axi4Widths.addrBits
+  val bytesOfDRAMRequired = cfg.targetAddressSpaceSize
 
   require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
     "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
@@ -224,7 +251,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     val hostMemOffsetWidthOffset = toHostDRAM.aw.bits.addr.getWidth - p(CtrlNastiKey).dataBits 
     val hostMemOffsetLowWidth = if (hostMemOffsetWidthOffset > 0) p(CtrlNastiKey).dataBits else toHostDRAM.aw.bits.addr.getWidth 
-    val hostMemOffsetHighWidth = if (hostMemOffsetWidthOffset > 0) hostMemOffsetWidthOffset else 0 
+    val hostMemOffsetHighWidth = if (hostMemOffsetWidthOffset > 0) hostMemOffsetWidthOffset else 1 
     val hostMemOffsetHigh = RegInit(0.U(hostMemOffsetHighWidth.W))
     val hostMemOffsetLow = RegInit(0.U(hostMemOffsetLowWidth.W))
     val hostMemOffset = Cat(hostMemOffsetHigh, hostMemOffsetLow)
@@ -300,10 +327,13 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Connect up aw to ingress and model
     ingress.io.nastiInputs.hBits.aw.valid := tNasti.aw.fire
     ingress.io.nastiInputs.hBits.aw.bits := tNasti.aw.bits
+    ingress.io.nastiInputs.hBits.aw.bits.addr := tNasti.aw.bits.addr - cfg.targetAddressOffset.U
+
 
     // Connect ar to ingress and model
     ingress.io.nastiInputs.hBits.ar.valid := tNasti.ar.fire
     ingress.io.nastiInputs.hBits.ar.bits := tNasti.ar.bits
+    ingress.io.nastiInputs.hBits.ar.bits.addr := tNasti.ar.bits.addr - cfg.targetAddressOffset.U
 
     // Connect w to ingress and model
     ingress.io.nastiInputs.hBits.w.valid := tNasti.w.fire

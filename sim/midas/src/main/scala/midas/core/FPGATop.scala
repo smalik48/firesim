@@ -46,7 +46,12 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val master = addWidget(new SimulationMaster)
   val loadMem = addWidget(new LoadMemWidget)
   val bridgeModuleMap: Map[BridgeIOAnnotation, BridgeModule[_ <: TokenizedRecord]] = bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget)).toMap
-  val bridgesRequiringDRAM = bridgeModuleMap.values.collect({ case b: RequiresHostDRAM =>  b})
+  val bridgesRequiringDRAM = bridgeModuleMap.values.collect({ case b: RequiresHostDRAM =>  b}).toSeq.sortBy(_.bytesOfDRAMRequired)
+  val dramOffsets = bridgesRequiringDRAM.foldLeft(Seq(BigInt(0)))({
+    case (offsets, bridge) =>
+      require(isPow2(bridge.bytesOfDRAMRequired))
+      (offsets.head + bridge.bytesOfDRAMRequired) +: offsets
+    }).tail.reverse
 
   // Host DRAM handling
   val memChannelParams = p(HostMemChannelKey)
@@ -68,9 +73,20 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val xbar = AXI4Xbar()
   memAXI4Node :*= AXI4Buffer() :*= xbar
   xbar := loadMem.toHostMemory
-  bridgesRequiringDRAM.foreach(bridge => xbar := AXI4Buffer() := bridge.hostDRAMMasterNode)
+  bridgesRequiringDRAM.zip(dramOffsets).foreach({ case (bridge, offset) =>
+   (xbar := AXI4Buffer()
+         := AXI4AddressOffset(offset, bridge.bytesOfDRAMRequired)
+         := bridge.hostDRAMMasterNode)
+  })
 
   def hostMemoryBundleParams(): AXI4BundleParameters = memAXI4Node.in(0)._1.params
+
+  def printHostDRAMSummary(): Unit = {
+    println("Host-FPGA DRAM Allocation Map:")
+    bridgesRequiringDRAM.zip(dramOffsets).foreach({ case (bridge, offset) =>
+      println(f"  ${bridge.getWName} -> [0x${offset}%X, 0x${offset + bridge.bytesOfDRAMRequired - 1}%X]")
+    })
+  }
 
   lazy val module = new FPGATopImp(this)
 }
@@ -147,6 +163,7 @@ class FPGATopImp(wrapper: FPGATop)(implicit p: Parameters) extends LazyModuleImp
   }
 
   wrapper.genCtrlIO(io.ctrl, p(FpgaMMIOSize))
+  wrapper.printHostDRAMSummary
 
   val addrConsts = dmaAddrMap.map {
     case AddrMapEntry(name, MemRange(addr, _, _)) =>
@@ -177,6 +194,6 @@ class FPGATopImp(wrapper: FPGATop)(implicit p: Parameters) extends LazyModuleImp
     "DMA_WIDTH"      -> p(DMANastiKey).dataBits / 8,
     "DMA_SIZE"       -> log2Ceil(p(DMANastiKey).dataBits / 8)
   )
-  def genHeader(sb: StringBuilder)(implicit p: Parameters) = wrapper.genHeader(sb)(p(ChannelWidth))
 
+  def genHeader(sb: StringBuilder)(implicit p: Parameters) = wrapper.genHeader(sb)(p(ChannelWidth))
 }

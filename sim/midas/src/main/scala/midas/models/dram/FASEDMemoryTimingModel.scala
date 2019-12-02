@@ -84,7 +84,7 @@ case class AXI4EdgeSummary(
   def targetAddressSpaceSize(): BigInt = {
     address.map(set => require(set.contiguous)) //Remove once we handle striping
     val base = targetAddressOffset()
-    address.map(set => set.base + set.mask + 1).reduce((a,b) => if (a < b) a else b)
+    address.map(set => set.base + set.mask + 1).reduce((a,b) => if (a > b) a else b) - base
   }
 }
 
@@ -201,7 +201,8 @@ class FASEDTargetIO(implicit val p: Parameters) extends Bundle {
 case class CompleteConfig(
     userProvided: BaseConfig,
     axi4Widths: NastiParameters,
-    axi4Edge: Option[AXI4EdgeSummary] = None) extends HasSerializationHints {
+    axi4Edge: Option[AXI4EdgeSummary] = None,
+    memoryRegionName: Option[String] = None) extends HasSerializationHints {
   def typeHints(): Seq[Class[_]] = Seq(userProvided.getClass)
 }
 
@@ -209,6 +210,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     with RequiresHostDRAM {
 
   val cfg = completeConfig.userProvided
+
   // Reconstitute the parameters object
   implicit override val p = hostParams.alterPartial({
     case NastiKey => completeConfig.axi4Widths
@@ -223,6 +225,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
 
   val bytesOfDRAMRequired = cfg.targetAddressSpaceSize
+  override val collasceLikeBridges = completeConfig.memoryRegionName != None
+  override val targetMemoryRegionName = completeConfig.memoryRegionName
 
   require(p(NastiKey).idBits <= p(MemNastiKey).idBits,
     "Target AXI4 IDs cannot be mapped 1:1 onto host AXI4 IDs"
@@ -249,18 +253,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       new TargetToHostAXI4Converter(p(NastiKey), p(MemNastiKey))
     ).module)
 
-    val hostMemOffsetWidthOffset = toHostDRAM.aw.bits.addr.getWidth - p(CtrlNastiKey).dataBits 
-    val hostMemOffsetLowWidth = if (hostMemOffsetWidthOffset > 0) p(CtrlNastiKey).dataBits else toHostDRAM.aw.bits.addr.getWidth 
-    val hostMemOffsetHighWidth = if (hostMemOffsetWidthOffset > 0) hostMemOffsetWidthOffset else 1 
-    val hostMemOffsetHigh = RegInit(0.U(hostMemOffsetHighWidth.W))
-    val hostMemOffsetLow = RegInit(0.U(hostMemOffsetLowWidth.W))
-    val hostMemOffset = Cat(hostMemOffsetHigh, hostMemOffsetLow)
-    attach(hostMemOffsetHigh, "hostMemOffsetHigh", WriteOnly)
-    attach(hostMemOffsetLow, "hostMemOffsetLow", WriteOnly)
-
     toHostDRAM <> widthAdapter.sAxi4
-    toHostDRAM.ar.bits.addr := widthAdapter.sAxi4.ar.bits.addr + hostMemOffset
-    toHostDRAM.aw.bits.addr := widthAdapter.sAxi4.aw.bits.addr + hostMemOffset
 
     widthAdapter.mAxi4.aw <> ingress.io.nastiOutputs.aw
     widthAdapter.mAxi4.ar <> ingress.io.nastiOutputs.ar

@@ -98,7 +98,7 @@ void serial_t::handle_loadmem_read(fesvr_loadmem_t loadmem) {
     mpz_t buf;
     mpz_init(buf);
     while (loadmem.size > 0) {
-        sim->read_mem(loadmem.addr + mem_host_offset, buf);
+        sim->read_mem(loadmem.addr + mem_host_offset - 0x80000000, buf);
 
         // If the read word is 0; mpz_export seems to return an array with length 0
         size_t beats_requested = (loadmem.size/sizeof(uint32_t) > MEM_DATA_CHUNK) ?
@@ -128,7 +128,7 @@ void serial_t::handle_loadmem_write(fesvr_loadmem_t loadmem) {
     mpz_t data;
     mpz_init(data);
     mpz_import(data, (loadmem.size + sizeof(uint32_t) - 1)/sizeof(uint32_t), -1, sizeof(uint32_t), 0, 0, buf); \
-    sim->write_mem_chunk(loadmem.addr + mem_host_offset, data, loadmem.size);
+    sim->write_mem_chunk(loadmem.addr + mem_host_offset - 0x80000000, data, loadmem.size);
     mpz_clear(data);
 }
 

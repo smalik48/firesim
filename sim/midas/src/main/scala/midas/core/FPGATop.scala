@@ -75,19 +75,27 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val xbar = AXI4Xbar()
   memAXI4Node :*= AXI4Buffer() :*= xbar
   xbar := loadMem.toHostMemory
-  bridgesRequiringDRAM.zip(dramOffsets).foreach({ case (bridge, offset) =>
-   (xbar := AXI4Buffer()
+  val targetMemoryRegions = bridgesRequiringDRAM.zip(dramOffsets).flatMap({ case (bridge, offset) =>
+    (xbar := AXI4Buffer()
          := AXI4AddressOffset(offset, bridge.bytesOfDRAMRequired)
          := bridge.hostDRAMMasterNode)
+
+    bridge.targetMemoryRegionName.map(name => TargetToHostMemoryMapping(name, offset))
   })
 
   def hostMemoryBundleParams(): AXI4BundleParameters = memAXI4Node.in(0)._1.params
 
   def printHostDRAMSummary(): Unit = {
+    println(f"Total Host-FPGA DRAM Allocated: ${totalDRAMAllocated.doubleValue / (1024 * 1024 * 1024)}%.3f GiB")
     println("Host-FPGA DRAM Allocation Map:")
     bridgesRequiringDRAM.zip(dramOffsets).foreach({ case (bridge, offset) =>
       println(f"  ${bridge.getWName} -> [0x${offset}%X, 0x${offset + bridge.bytesOfDRAMRequired - 1}%X]")
     })
+  }
+
+  override def genHeader(sb: StringBuilder)(implicit channelWidth: Int) {
+    super.genHeader(sb)
+    targetMemoryRegions.foreach(_.serializeToHeader(sb))
   }
 
   lazy val module = new FPGATopImp(this)

@@ -18,6 +18,7 @@ abstract class PlatformShim(implicit p: Parameters) extends MultiIOModule {
   def headerConsts: Seq[(String, Long)]
   def genHeader(sb: StringBuilder, target: String) {
     import widgets.CppGenerationUtils._
+    sb.append("#include <cstdint>\n")
     sb.append(genStatic("TARGET_NAME", widgets.CStrLit(target)))
     sb.append(genMacro("PLATFORM_TYPE", s"V${this.getClass.getSimpleName}"))
     if (p(EnableSnapshot)) {

@@ -70,8 +70,6 @@ firesim_top_t::firesim_top_t(int argc, char** argv)
     #endif
 #endif
 
-std::vector<uint64_t> host_mem_offsets;
-uint64_t host_mem_offset = -0x80000000LL;
 #ifdef FASEDMEMORYTIMINGMODEL_0
     fpga_models.push_back(new FASEDMemoryTimingModel(
                 this,
@@ -82,9 +80,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_0_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_0_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_0_W_names),
-                argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += (1ULL << FASEDMEMORYTIMINGMODEL_0_target_addr_bits);
+                argc, argv, "memory_stats.csv", 1L << FASEDMEMORYTIMINGMODEL_0_target_addr_bits));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_1
@@ -97,9 +93,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_1_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_1_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_1_W_names),
-                argc, argv, "memory_stats1.csv", 1L << FASEDMEMORYTIMINGMODEL_1_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_1_target_addr_bits;
+                argc, argv, "memory_stats1.csv", 1L << FASEDMEMORYTIMINGMODEL_1_target_addr_bits));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_2
@@ -112,9 +106,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_2_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_2_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_2_W_names),
-                argc, argv, "memory_stats2.csv", 1L << FASEDMEMORYTIMINGMODEL_2_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_2_target_addr_bits;
+                argc, argv, "memory_stats2.csv", 1L << FASEDMEMORYTIMINGMODEL_2_target_addr_bits));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_3
@@ -127,9 +119,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_3_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_3_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_3_W_names),
-                argc, argv, "memory_stats3.csv", 1L << FASEDMEMORYTIMINGMODEL_3_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_3_target_addr_bits;
+                argc, argv, "memory_stats3.csv", 1L << FASEDMEMORYTIMINGMODEL_3_target_addr_bits));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_4
@@ -142,9 +132,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_4_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_4_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_4_W_names),
-                argc, argv, "memory_stats4.csv", 1L << FASEDMEMORYTIMINGMODEL_4_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_4_target_addr_bits;
+                argc, argv, "memory_stats4.csv", 1L << FASEDMEMORYTIMINGMODEL_4_target_addr_bits));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_5
@@ -157,9 +145,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_5_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_5_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_5_W_names),
-                argc, argv, "memory_stats5.csv", 1L << FASEDMEMORYTIMINGMODEL_5_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_5_target_addr_bits;
+                argc, argv, "memory_stats5.csv", 1L << FASEDMEMORYTIMINGMODEL_5_target_addr_bits));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_6
@@ -172,9 +158,7 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_6_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_6_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_6_W_names),
-                argc, argv, "memory_stats6.csv", 1L << FASEDMEMORYTIMINGMODEL_6_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_6_target_addr_bits;
+                argc, argv, "memory_stats6.csv", 1L << FASEDMEMORYTIMINGMODEL_6_target_addr_bits));
 #endif
 
 #ifdef FASEDMEMORYTIMINGMODEL_7
@@ -187,43 +171,41 @@ uint64_t host_mem_offset = -0x80000000LL;
                     FASEDMEMORYTIMINGMODEL_7_W_num_registers,
                     (const unsigned int*) FASEDMEMORYTIMINGMODEL_7_W_addrs,
                     (const char* const*) FASEDMEMORYTIMINGMODEL_7_W_names),
-                argc, argv, "memory_stats7.csv", 1L << FASEDMEMORYTIMINGMODEL_7_target_addr_bits, host_mem_offset));
-     host_mem_offsets.push_back(host_mem_offset);
-     host_mem_offset += 1ULL << FASEDMEMORYTIMINGMODEL_7_target_addr_bits;
+                argc, argv, "memory_stats7.csv", 1L << FASEDMEMORYTIMINGMODEL_7_target_addr_bits));
 #endif
 
 #ifdef SERIALBRIDGEMODULE_struct_guard
     #ifdef SERIALBRIDGEMODULE_0_PRESENT
     SERIALBRIDGEMODULE_0_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_0_substruct, 0, host_mem_offsets[0]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_0_substruct, 0, memory_0_offset));
     #endif
     #ifdef SERIALBRIDGEMODULE_1_PRESENT
     SERIALBRIDGEMODULE_1_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_1_substruct, 1, host_mem_offsets[1]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_1_substruct, 1, memory_1_offset));
     #endif
     #ifdef SERIALBRIDGEMODULE_2_PRESENT
     SERIALBRIDGEMODULE_2_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_2_substruct, 2, host_mem_offsets[2]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_2_substruct, 2, memory_2_offset));
     #endif
     #ifdef SERIALBRIDGEMODULE_3_PRESENT
     SERIALBRIDGEMODULE_3_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_3_substruct, 3, host_mem_offsets[3]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_3_substruct, 3, memory_3_offset));
     #endif
     #ifdef SERIALBRIDGEMODULE_4_PRESENT
     SERIALBRIDGEMODULE_4_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_4_substruct, 4, host_mem_offsets[4]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_4_substruct, 4, memory_4_offset));
     #endif
     #ifdef SERIALBRIDGEMODULE_5_PRESENT
     SERIALBRIDGEMODULE_5_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_5_substruct, 5, host_mem_offsets[5]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_5_substruct, 5, memory_5_offset));
     #endif
     #ifdef SERIALBRIDGEMODULE_6_PRESENT
     SERIALBRIDGEMODULE_6_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_6_substruct, 6, host_mem_offsets[6]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_6_substruct, 6, memory_6_offset));
     #endif
     #ifdef SERIALBRIDGEMODULE_7_PRESENT
     SERIALBRIDGEMODULE_7_substruct_create;
-    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_7_substruct, 7, host_mem_offsets[7]));
+    add_bridge_driver(new serial_t(this, args, SERIALBRIDGEMODULE_7_substruct, 7, memory_7_offset));
     #endif
 #endif
 

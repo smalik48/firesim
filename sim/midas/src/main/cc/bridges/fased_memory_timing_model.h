@@ -66,7 +66,7 @@ class FASEDMemoryTimingModel: public FpgaModel
 {
 public:
   FASEDMemoryTimingModel(simif_t* s, AddressMap addr_map, int argc, char** argv,
-                  std::string stats_file_name, size_t mem_size, uint64_t mem_host_offset);
+                  std::string stats_file_name, size_t mem_size);
   void init();
   void profile();
   void finish();
@@ -108,7 +108,6 @@ private:
 
   bool has_latency_histograms() { return histograms.size() > 0; };
   size_t mem_size;
-  uint64_t mem_host_offset;
 };
 
 #endif // __FASED_MEMORY_TIMING_MODEL_H
